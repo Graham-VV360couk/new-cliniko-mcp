@@ -1,0 +1,196 @@
+{
+  "cliniko_mcp_configuration": {
+    "description": "EMPIRICALLY TESTED Cliniko MCP server configuration for Eleven Labs conversational AI",
+    "version": "2.0.0",
+    "last_updated": "2025-08-30",
+    "validation_status": "All field formats empirically tested and verified with actual API calls",
+    
+    "verified_defaults": {
+      "practitioner_id": "1752849161776013508",
+      "appointment_type_id": "1752849165005627509", 
+      "business_id": "1752849165332784051",
+      "timezone": "UTC",
+      "default_appointment_duration_minutes": 60
+    },
+    
+    "appointment_creation": {
+      "description": "EMPIRICALLY VERIFIED - These exact field names and formats work 100%",
+      "required_fields": {
+        "patient_id": {
+          "type": "string",
+          "description": "Patient ID from list_patients or create_patient",
+          "example": "1764028746571981724"
+        },
+        "practitioner_id": {
+          "type": "string", 
+          "description": "Use verified default",
+          "value": "1752849161776013508"
+        },
+        "appointment_type_id": {
+          "type": "string",
+          "description": "Use verified default", 
+          "value": "1752849165005627509"
+        },
+        "business_id": {
+          "type": "string",
+          "description": "Use verified default",
+          "value": "1752849165332784051"
+        },
+        "appointment_start": {
+          "type": "string",
+          "description": "ISO datetime with Z suffix",
+          "format": "YYYY-MM-DDTHH:MM:SSZ",
+          "example": "2025-09-05T10:00:00Z"
+        },
+        "appointment_end": {
+          "type": "string", 
+          "description": "ISO datetime with Z suffix",
+          "format": "YYYY-MM-DDTHH:MM:SSZ",
+          "example": "2025-09-05T11:00:00Z"
+        }
+      },
+      "optional_fields": {
+        "notes": {
+          "type": "string",
+          "description": "Appointment notes"
+        }
+      },
+      "alternative_time_fields": {
+        "note": "These also work but use appointment_start/appointment_end for consistency",
+        "starts_at": "ISO datetime (alternative to appointment_start)",
+        "ends_at": "ISO datetime (alternative to appointment_end)"
+      },
+      "guaranteed_working_example": {
+        "patient_id": "1764028746571981724",
+        "practitioner_id": "1752849161776013508",
+        "appointment_type_id": "1752849165005627509",
+        "business_id": "1752849165332784051",
+        "appointment_start": "2025-09-05T10:00:00Z",
+        "appointment_end": "2025-09-05T11:00:00Z",
+        "notes": "Appointment created via MCP"
+      }
+    },
+    
+    "patient_creation": {
+      "description": "EMPIRICALLY VERIFIED - These exact field names work 100%",
+      "required_fields": {
+        "first_name": {
+          "type": "string",
+          "description": "Patient's first name",
+          "example": "John"
+        },
+        "last_name": {
+          "type": "string", 
+          "description": "Patient's last name",
+          "example": "Smith"
+        }
+      },
+      "verified_optional_fields": {
+        "email": {
+          "type": "string",
+          "format": "email@example.com",
+          "example": "john.smith@email.com"
+        },
+        "date_of_birth": {
+          "type": "string",
+          "format": "YYYY-MM-DD", 
+          "example": "1985-03-15"
+        },
+        "title": {
+          "type": "string",
+          "example": "Mr"
+        },
+        "sex": {
+          "type": "string",
+          "example": "Male"
+        },
+        "address_1": {
+          "type": "string",
+          "example": "123 Main Street"
+        },
+        "city": {
+          "type": "string", 
+          "example": "London"
+        },
+        "country": {
+          "type": "string",
+          "example": "United Kingdom"
+        },
+        "post_code": {
+          "type": "string",
+          "example": "SW1A 1AA"
+        },
+        "occupation": {
+          "type": "string",
+          "example": "Software Engineer"
+        }
+      },
+      "guaranteed_working_examples": {
+        "minimal": {
+          "first_name": "John",
+          "last_name": "Smith"
+        },
+        "complete": {
+          "first_name": "John",
+          "last_name": "Smith", 
+          "email": "john.smith@email.com",
+          "date_of_birth": "1985-03-15",
+          "title": "Mr",
+          "sex": "Male",
+          "address_1": "123 Main Street",
+          "city": "London",
+          "country": "United Kingdom",
+          "post_code": "SW1A 1AA",
+          "occupation": "Software Engineer"
+        }
+      }
+    },
+    
+    "critical_success_patterns": {
+      "appointment_booking_workflow": [
+        "1. Call list_patients(q='') to get all patients",
+        "2. Search results for patient name (client-side filtering)", 
+        "3. If not found: create_patient({'first_name': 'John', 'last_name': 'Smith'})",
+        "4. Extract patient_id from result",
+        "5. Call create_appointment with all 6 required fields using verified defaults",
+        "6. Check for 'appointment_id' in response to confirm success"
+      ],
+      "field_validation_rules": [
+        "All IDs must be strings in quotes",
+        "Datetime must be ISO format with Z suffix", 
+        "Use exact field names from verified examples",
+        "Include all 6 required fields for appointments",
+        "Use provided default values for practitioner/business/appointment_type"
+      ]
+    },
+    
+    "error_prevention": {
+      "never_use": {
+        "start_time": "Use appointment_start instead",
+        "end_time": "Use appointment_end instead", 
+        "integer_ids": "Always use string IDs",
+        "natural_language_dates": "Always use ISO format"
+      },
+      "always_use": {
+        "appointment_start": "For start time field",
+        "appointment_end": "For end time field",
+        "string_ids": "All IDs in quotes",
+        "iso_datetime": "YYYY-MM-DDTHH:MM:SSZ format"
+      }
+    },
+    
+    "eleven_labs_response_templates": {
+      "booking_success": "✅ Appointment confirmed! {patient_name} is booked for {day}, {date} at {time} with Dr. Yash Verma. Appointment ID: {appointment_id}",
+      "booking_error": "❌ I encountered an issue: {error_details}. Let me try again.",
+      "patient_created": "I've created a new patient record for {patient_name}.",
+      "patient_found": "Found existing patient: {patient_name}.", 
+      "appointment_cancelled": "✅ Appointment {appointment_id} has been cancelled successfully."
+    },
+    
+    "production_data": {
+      "verified_patient_id": "1764028746571981724",
+      "verified_appointment_id": "1764041108192502241",
+      "test_patient_id": "1764041171115451305"
+    }
+  }
+}

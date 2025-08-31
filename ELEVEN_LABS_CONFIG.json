@@ -1,0 +1,94 @@
+{
+  "cliniko_mcp_configuration": {
+    "description": "Production-ready Cliniko MCP server configuration for Eleven Labs conversational AI",
+    "version": "1.0.0",
+    "
+": "2025-08-30",
+    
+    "default_values": {
+      "practitioner_id": "1752849161776013508",
+      "appointment_type_id": "1752849165005627509", 
+      "business_id": "1752849165332784051",
+      "timezone": "UTC",
+      "default_appointment_duration": 60
+    },
+    
+    "appointment_creation_template": {
+      "required_fields": {
+        "patient_id": "string - Get from list_patients or create_patient",
+        "practitioner_id": "string - Use default: 1752849161776013508",
+        "appointment_type_id": "string - Use default: 1752849165005627509",
+        "business_id": "string - Use default: 1752849165332784051",
+        "appointment_start": "string - ISO format: YYYY-MM-DDTHH:MM:SSZ",
+        "appointment_end": "string - ISO format: YYYY-MM-DDTHH:MM:SSZ"
+      },
+      "optional_fields": {
+        "notes": "string - Appointment notes"
+      },
+      "working_example": {
+        "patient_id": "1764028746571981724",
+        "practitioner_id": "1752849161776013508",
+        "appointment_type_id": "1752849165005627509",
+        "business_id": "1752849165332784051",
+        "appointment_start": "2025-09-05T10:00:00Z",
+        "appointment_end": "2025-09-05T11:00:00Z",
+        "notes": "Regular consultation appointment"
+      }
+    },
+    
+    "patient_creation_template": {
+      "required_fields": {
+        "first_name": "string - Patient's first name",
+        "last_name": "string - Patient's last name"
+      },
+      "recommended_fields": {
+        "email": "string - Email address for notifications",
+        "date_of_birth": "string - YYYY-MM-DD format"
+      },
+      "working_example": {
+        "first_name": "John",
+        "last_name": "Smith",
+        "email": "john.smith@email.com",
+        "date_of_birth": "1985-03-15"
+      }
+    },
+    
+    "common_workflows": {
+      "book_appointment": [
+        "1. Call list_patients(q='patient_name') to search for existing patient",
+        "2. If patient not found, call create_patient with first_name and last_name",
+        "3. Call create_appointment with all required fields (use defaults for practitioner_id, appointment_type_id, business_id)",
+        "4. Return appointment confirmation with appointment ID and details"
+      ],
+      "check_existing_appointments": [
+        "1. Call list_appointments() to get all appointments",
+        "2. Filter by patient name or date as needed"
+      ],
+      "cancel_appointment": [
+        "1. Call delete_appointment(appointment_id) with string ID"
+      ]
+    },
+    
+    "error_prevention_rules": {
+      "id_format": "ALL IDs must be strings, never integers",
+      "datetime_format": "Use ISO format with Z suffix (e.g., '2025-09-05T10:00:00Z')",
+      "search_before_create": "Always search for existing patients before creating new ones",
+      "required_fields": "Include ALL required fields for appointments - missing any will cause 422 errors",
+      "field_names": "Use exact field names as specified in templates"
+    },
+    
+    "response_patterns": {
+      "booking_success": "✅ Appointment confirmed! [Patient Name] is booked for [Date] at [Time] with Dr. Yash Verma. Appointment ID: [ID]",
+      "booking_error": "❌ Unable to book appointment. [Error details]",
+      "patient_found": "Found existing patient: [Patient Name]",
+      "patient_created": "Created new patient: [Patient Name]",
+      "search_results": "Found [X] appointments matching your criteria"
+    },
+    
+    "testing_data": {
+      "test_patient_id": "1764028746571981724",
+      "test_appointment_id": "1764036323850592732",
+      "sample_datetime": "2025-09-05T10:00:00Z"
+    }
+  }
+}

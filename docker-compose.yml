@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  cliniko-mcp:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - CLINIKO_API_KEY=${CLINIKO_API_KEY}
+      - HOST=0.0.0.0
+      - PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M

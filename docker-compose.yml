@@ -4,14 +4,14 @@ services:
   cliniko-mcp:
     build: .
     ports:
-      - "8000:8000"
+      - "8011:8000"
     environment:
       - CLINIKO_API_KEY=${CLINIKO_API_KEY}
       - HOST=0.0.0.0
-      - PORT=8000
+      - PORT=8011
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
       interval: 30s
       timeout: 10s
       retries: 3

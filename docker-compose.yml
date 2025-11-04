@@ -30,3 +30,5 @@ services:
       - traefik.http.routers.cliniko-mcp.entrypoints=http
       - traefik.http.routers.cliniko-mcp.rule=Host(`a0swcgcgg4c8o8cgcsggg00k.46.62.130.36.sslip.io`) && (PathPrefix(`/`) || PathPrefix(`/sse`))
       - traefik.http.routers.cliniko-mcp.middlewares=gzip
+      - traefik.http.middlewares.cliniko-mcp-strip.stripprefix.prefixes=/sse
+      - traefik.http.routers.cliniko-mcp.middlewares=cliniko-mcp-strip,gzip

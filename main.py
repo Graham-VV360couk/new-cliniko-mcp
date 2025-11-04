@@ -2,14 +2,14 @@ from fastmcp import FastMCP
 from cliniko_client import ClinikoClient
 import os
 import logging
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 
 # Configure logging for production
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
+
+logger = logging.getLogger(__name__)
 
 # Create the FastMCP app instance
 mcp = FastMCP("Cliniko MCP Server")
@@ -122,75 +122,97 @@ async def get_appointment_resource(id: int):
 async def list_appointments_resource():
     return {"appointments": await client.list_appointments()}
 
-if __name__ == "__main__":
-    import asyncio
+
+def create_app():
+    """Factory function to create the FastAPI app"""
+    from fastapi import FastAPI, Request
+    from fastapi.responses import JSONResponse
+    from sse_starlette.sse import EventSourceResponse
     import fastmcp.server.http as http
+    
+    logger.info("Creating SSE app...")
+    
+    # Create the SSE app using FastMCP
+    app = http.create_sse_app(
+        mcp,
+        sse_path="/sse",
+        message_path="/message"
+    )
+    
+    logger.info("Adding custom endpoints...")
+    
+    # Add health check endpoint
+    @app.get("/health")
+    async def health_check():
+        logger.info("Health check called")
+        return JSONResponse(
+            status_code=200,
+            content={
+                "status": "healthy",
+                "service": "Cliniko MCP Server",
+                "transport": "sse",
+                "version": "1.0"
+            }
+        )
+    
+    # Add root endpoint for debugging
+    @app.get("/")
+    async def root():
+        logger.info("Root endpoint called")
+        try:
+            tools_dict = mcp.get_tools()
+            tool_names = list(tools_dict.keys())
+        except Exception as e:
+            logger.error(f"Error getting tools: {e}")
+            tool_names = []
+        
+        return JSONResponse(
+            content={
+                "service": "Cliniko MCP Server",
+                "version": "1.0",
+                "status": "running",
+                "endpoints": {
+                    "sse": "/sse",
+                    "message": "/message",
+                    "health": "/health"
+                },
+                "tools_count": len(tool_names),
+                "tools": tool_names
+            }
+        )
+    
+    logger.info("App created successfully")
+    return app
+
+
+if __name__ == "__main__":
     import uvicorn
 
-    print("🚀 Starting Cliniko MCP Server...")
+    logger.info("🚀 Starting Cliniko MCP Server...")
 
     # Check registered tools
     try:
         tools = mcp.get_tools()
-        print(f"📋 Registered tools: {len(tools)}")
+        logger.info(f"📋 Registered tools: {len(tools)}")
         for name, tool in tools.items():
-            print(f"   ✅ {name}: {tool.description}")
+            logger.info(f"   ✅ {name}: {tool.description}")
     except Exception as e:
-        print(f"⚠️  Error getting tools: {e}")
-
-    print("🎯 Server ready to start...")
+        logger.error(f"⚠️  Error getting tools: {e}")
 
     # Get configuration from environment
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
-    transport = os.getenv("MCP_TRANSPORT", "http").lower()
+    transport = os.getenv("MCP_TRANSPORT", "sse").lower()
 
-    print(f"🌐 Starting MCP server on {host}:{port} using {transport} transport")
+    logger.info(f"🌐 Starting MCP server on {host}:{port} using {transport} transport")
 
     if transport == "stdio":
-        print("📟 Running in stdio mode (for local AI clients)")
+        logger.info("📟 Running in stdio mode (for local AI clients)")
         mcp.run("stdio")
-
     elif transport in ("sse", "http"):
-        print("🌊 Running in HTTP/SSE mode (modern FastMCP transport)")
-        
-        # Create SSE app with explicit paths
-        app = http.create_sse_app(
-            mcp,
-            sse_path="/sse",
-            message_path="/message"
-        )
-        
-        # Add health check endpoint
-        @app.get("/health")
-        async def health_check():
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "status": "healthy",
-                    "service": "Cliniko MCP Server",
-                    "transport": "sse"
-                }
-            )
-        
-        # Add root endpoint for debugging
-        @app.get("/")
-        async def root():
-            return JSONResponse(
-                content={
-                    "service": "Cliniko MCP Server",
-                    "version": "1.0",
-                    "endpoints": {
-                        "sse": "/sse",
-                        "message": "/message",
-                        "health": "/health"
-                    },
-                    "tools": list(mcp.get_tools().keys())
-                }
-            )
-        
+        logger.info("🌊 Running in HTTP/SSE mode")
+        app = create_app()
         uvicorn.run(app, host=host, port=port, log_level="info")
-
     else:
-        print(f"❌ Unknown transport: {transport}. Supported: stdio, sse, http")
+        logger.error(f"❌ Unknown transport: {transport}. Supported: stdio, sse, http")
         exit(1)

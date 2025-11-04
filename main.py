@@ -124,10 +124,10 @@ async def list_appointments_resource():
 
 
 def create_app():
-    """Factory function to create the Starlette app with custom routes"""
+    """Factory function to create the app with middleware for custom routes"""
     from starlette.applications import Starlette
     from starlette.responses import JSONResponse
-    from starlette.routing import Route
+    from starlette.routing import Route, Mount
     import fastmcp.server.http as http
     
     logger.info("Creating SSE app...")
@@ -139,7 +139,7 @@ def create_app():
         message_path="/message"
     )
     
-    logger.info("Adding custom endpoints...")
+    logger.info("Creating wrapper app with custom routes...")
     
     # Define custom route handlers
     async def health_check(request):
@@ -157,11 +157,10 @@ def create_app():
     async def root(request):
         logger.info("Root endpoint called")
         try:
-            # Get tools synchronously
-            tools_dict = {}
+            # Get tools from MCP
+            tool_names = []
             if hasattr(mcp, '_tools'):
-                tools_dict = mcp._tools
-            tool_names = list(tools_dict.keys())
+                tool_names = list(mcp._tools.keys())
         except Exception as e:
             logger.error(f"Error getting tools: {e}")
             tool_names = []
@@ -173,32 +172,24 @@ def create_app():
             "endpoints": {
                 "sse": "/sse",
                 "message": "/message",
-                "health": "/health"
+                "health": "/health",
+                "root": "/"
             },
             "tools_count": len(tool_names),
             "tools": tool_names
         })
     
-    # Add custom routes to the existing app
-    from starlette.routing import Mount
-    
-    # Get existing routes from sse_app
-    existing_routes = list(sse_app.routes)
-    
-    # Add our custom routes
-    custom_routes = [
+    # Create a new Starlette app that wraps everything
+    routes = [
         Route("/health", health_check, methods=["GET"]),
         Route("/", root, methods=["GET"]),
+        Mount("/", app=sse_app),  # Mount the SSE app for all other routes
     ]
     
-    # Combine routes
-    sse_app.routes = custom_routes + existing_routes
+    wrapper_app = Starlette(routes=routes)
     
-    logger.info("App created successfully with routes:")
-    for route in sse_app.routes:
-        logger.info(f"  - {route.path}")
-    
-    return sse_app
+    logger.info("App created successfully")
+    return wrapper_app
 
 
 if __name__ == "__main__":
@@ -206,12 +197,12 @@ if __name__ == "__main__":
 
     logger.info("🚀 Starting Cliniko MCP Server...")
 
-    # Check registered tools (fix the coroutine issue)
+    # Check registered tools
     try:
         if hasattr(mcp, '_tools'):
             tools = mcp._tools
             logger.info(f"📋 Registered tools: {len(tools)}")
-            for name, tool in tools.items():
+            for name in tools.keys():
                 logger.info(f"   ✅ {name}")
         else:
             logger.warning("No tools attribute found")

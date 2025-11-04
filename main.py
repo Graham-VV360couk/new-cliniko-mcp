@@ -2,6 +2,8 @@ from fastmcp import FastMCP
 from cliniko_client import ClinikoClient
 import os
 import logging
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 # Configure logging for production
 logging.basicConfig(
@@ -10,115 +12,113 @@ logging.basicConfig(
 )
 
 # Create the FastMCP app instance
-app = FastMCP("Cliniko MCP Server")
+mcp = FastMCP("Cliniko MCP Server")
 
 # Create the Cliniko client
 client = ClinikoClient()
 
-# Health check handled by FastMCP's built-in server
-
 # Register all patient tools directly here
-@app.tool("list_patients", description="List/search all Cliniko patients")
+@mcp.tool("list_patients", description="List/search all Cliniko patients")
 async def list_patients(q: str = "") -> dict:
     patients = await client.list_patients(q)
     return {"patients": patients}
 
-@app.tool("get_patient", description="Get patient by ID")
+@mcp.tool("get_patient", description="Get patient by ID")
 async def get_patient(patient_id: int) -> dict:
     return await client.get_patient(patient_id)
 
-@app.tool("create_patient", description="Create new patient")
+@mcp.tool("create_patient", description="Create new patient")
 async def create_patient(patient: dict) -> dict:
     return await client.create_patient(patient)
 
-@app.tool("update_patient", description="Update patient details")
+@mcp.tool("update_patient", description="Update patient details")
 async def update_patient(patient_id: int, patient: dict) -> dict:
     return await client.update_patient(patient_id, patient)
 
-@app.tool("delete_patient", description="Delete (archive) a patient")
+@mcp.tool("delete_patient", description="Delete (archive) a patient")
 async def delete_patient(patient_id: int) -> dict:
     return await client.delete_patient(patient_id)
 
 # Register all appointment tools
-@app.tool("list_appointments", description="List/search all Cliniko appointments")
+@mcp.tool("list_appointments", description="List/search all Cliniko appointments")
 async def list_appointments(q: str = "") -> dict:
     appointments = await client.list_appointments(q)
     return {"appointments": appointments}
 
-@app.tool("get_appointment", description="Get appointment by ID")
+@mcp.tool("get_appointment", description="Get appointment by ID")
 async def get_appointment(appointment_id: int) -> dict:
     return await client.get_appointment(appointment_id)
 
-@app.tool("create_appointment", description="Create new appointment")
+@mcp.tool("create_appointment", description="Create new appointment")
 async def create_appointment(appointment: dict) -> dict:
     return await client.create_appointment(appointment)
 
-@app.tool("update_appointment", description="Update appointment details")
+@mcp.tool("update_appointment", description="Update appointment details")
 async def update_appointment(appointment_id: int, appointment: dict) -> dict:
     return await client.update_appointment(appointment_id, appointment)
 
-@app.tool("delete_appointment", description="Delete an appointment")
+@mcp.tool("delete_appointment", description="Delete an appointment")
 async def delete_appointment(appointment_id: int) -> dict:
     return await client.delete_appointment(appointment_id)
 
 # Register all invoice tools
-@app.tool("list_invoices", description="List/search all Cliniko invoices")
+@mcp.tool("list_invoices", description="List/search all Cliniko invoices")
 async def list_invoices(q: str = "") -> dict:
     invoices = await client.list_invoices(q)
     return {"invoices": invoices}
 
-@app.tool("get_invoice", description="Get invoice by ID")
+@mcp.tool("get_invoice", description="Get invoice by ID")
 async def get_invoice(invoice_id: int) -> dict:
     return await client.get_invoice(invoice_id)
 
-@app.tool("create_invoice", description="Create new invoice")
+@mcp.tool("create_invoice", description="Create new invoice")
 async def create_invoice(invoice: dict) -> dict:
     return await client.create_invoice(invoice)
 
-@app.tool("update_invoice", description="Update invoice details")
+@mcp.tool("update_invoice", description="Update invoice details")
 async def update_invoice(invoice_id: int, invoice: dict) -> dict:
     return await client.update_invoice(invoice_id, invoice)
 
-@app.tool("delete_invoice", description="Delete an invoice")
+@mcp.tool("delete_invoice", description="Delete an invoice")
 async def delete_invoice(invoice_id: int) -> dict:
     return await client.delete_invoice(invoice_id)
 
 # Register all practitioner tools
-@app.tool("list_practitioners", description="List/search all Cliniko practitioners")
+@mcp.tool("list_practitioners", description="List/search all Cliniko practitioners")
 async def list_practitioners(q: str = "") -> dict:
     practitioners = await client.list_practitioners(q)
     return {"practitioners": practitioners}
 
-@app.tool("get_practitioner", description="Get practitioner by ID")
+@mcp.tool("get_practitioner", description="Get practitioner by ID")
 async def get_practitioner(practitioner_id: int) -> dict:
     return await client.get_practitioner(practitioner_id)
 
-@app.tool("create_practitioner", description="Create new practitioner")
+@mcp.tool("create_practitioner", description="Create new practitioner")
 async def create_practitioner(practitioner: dict) -> dict:
     return await client.create_practitioner(practitioner)
 
-@app.tool("update_practitioner", description="Update practitioner details")
+@mcp.tool("update_practitioner", description="Update practitioner details")
 async def update_practitioner(practitioner_id: int, practitioner: dict) -> dict:
     return await client.update_practitioner(practitioner_id, practitioner)
 
-@app.tool("delete_practitioner", description="Delete a practitioner")
+@mcp.tool("delete_practitioner", description="Delete a practitioner")
 async def delete_practitioner(practitioner_id: int) -> dict:
     return await client.delete_practitioner(practitioner_id)
 
 # Register resources
-@app.resource("patient://{id}", description="Get patient by ID")
+@mcp.resource("patient://{id}", description="Get patient by ID")
 async def get_patient_resource(id: int):
     return await client.get_patient(id)
 
-@app.resource("patients://list", description="List all patients")
+@mcp.resource("patients://list", description="List all patients")
 async def list_patients_resource():
     return {"patients": await client.list_patients()}
 
-@app.resource("appointment://{id}", description="Get appointment by ID")
+@mcp.resource("appointment://{id}", description="Get appointment by ID")
 async def get_appointment_resource(id: int):
     return await client.get_appointment(id)
 
-@app.resource("appointments://list", description="List all appointments")
+@mcp.resource("appointments://list", description="List all appointments")
 async def list_appointments_resource():
     return {"appointments": await client.list_appointments()}
 
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 
     # Check registered tools
     try:
-        tools = app.get_tools()
+        tools = mcp.get_tools()
         print(f"📋 Registered tools: {len(tools)}")
         for name, tool in tools.items():
             print(f"   ✅ {name}: {tool.description}")
@@ -149,21 +149,47 @@ if __name__ == "__main__":
 
     if transport == "stdio":
         print("📟 Running in stdio mode (for local AI clients)")
-        app.run("stdio")
+        mcp.run("stdio")
 
     elif transport in ("sse", "http"):
         print("🌊 Running in HTTP/SSE mode (modern FastMCP transport)")
-        import fastmcp.server.http as http
-        import uvicorn
-    
-        # Explicitly define SSE and message paths
-        app_instance = http.create_sse_app(
-            app,
-            message_path="/message",
-            sse_path="/sse"
+        
+        # Create SSE app with explicit paths
+        app = http.create_sse_app(
+            mcp,
+            sse_path="/sse",
+            message_path="/message"
         )
-    
-        uvicorn.run(app_instance, host=host, port=port, log_level="info")
+        
+        # Add health check endpoint
+        @app.get("/health")
+        async def health_check():
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "status": "healthy",
+                    "service": "Cliniko MCP Server",
+                    "transport": "sse"
+                }
+            )
+        
+        # Add root endpoint for debugging
+        @app.get("/")
+        async def root():
+            return JSONResponse(
+                content={
+                    "service": "Cliniko MCP Server",
+                    "version": "1.0",
+                    "endpoints": {
+                        "sse": "/sse",
+                        "message": "/message",
+                        "health": "/health"
+                    },
+                    "tools": list(mcp.get_tools().keys())
+                }
+            )
+        
+        uvicorn.run(app, host=host, port=port, log_level="info")
 
     else:
         print(f"❌ Unknown transport: {transport}. Supported: stdio, sse, http")

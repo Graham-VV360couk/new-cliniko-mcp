@@ -153,7 +153,16 @@ if __name__ == "__main__":
 
     elif transport in ("sse", "http"):
         print("🌊 Running in HTTP/SSE mode (modern FastMCP transport)")
-        app_instance = http.create_sse_app(app)
+        import fastmcp.server.http as http
+        import uvicorn
+    
+        # Explicitly define SSE and message paths
+        app_instance = http.create_sse_app(
+            app,
+            message_path="/message",
+            sse_path="/sse"
+        )
+    
         uvicorn.run(app_instance, host=host, port=port, log_level="info")
 
     else:

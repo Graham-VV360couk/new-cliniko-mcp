@@ -24,3 +24,9 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+    labels:
+      - traefik.enable=true
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.routers.cliniko-mcp.entrypoints=http
+      - traefik.http.routers.cliniko-mcp.rule=Host(`a0swcgcgg4c8o8cgcsggg00k.46.62.130.36.sslip.io`) && (PathPrefix(`/`) || PathPrefix(`/sse`))
+      - traefik.http.routers.cliniko-mcp.middlewares=gzip

@@ -124,16 +124,16 @@ async def list_appointments_resource():
 
 
 def create_app():
-    """Factory function to create the FastAPI app"""
-    from fastapi import FastAPI, Request
-    from fastapi.responses import JSONResponse
-    from sse_starlette.sse import EventSourceResponse
+    """Factory function to create the Starlette app with custom routes"""
+    from starlette.applications import Starlette
+    from starlette.responses import JSONResponse
+    from starlette.routing import Route
     import fastmcp.server.http as http
     
     logger.info("Creating SSE app...")
     
     # Create the SSE app using FastMCP
-    app = http.create_sse_app(
+    sse_app = http.create_sse_app(
         mcp,
         sse_path="/sse",
         message_path="/message"
@@ -141,48 +141,64 @@ def create_app():
     
     logger.info("Adding custom endpoints...")
     
-    # Add health check endpoint
-    @app.get("/health")
-    async def health_check():
+    # Define custom route handlers
+    async def health_check(request):
         logger.info("Health check called")
         return JSONResponse(
-            status_code=200,
-            content={
+            {
                 "status": "healthy",
                 "service": "Cliniko MCP Server",
                 "transport": "sse",
                 "version": "1.0"
-            }
+            },
+            status_code=200
         )
     
-    # Add root endpoint for debugging
-    @app.get("/")
-    async def root():
+    async def root(request):
         logger.info("Root endpoint called")
         try:
-            tools_dict = mcp.get_tools()
+            # Get tools synchronously
+            tools_dict = {}
+            if hasattr(mcp, '_tools'):
+                tools_dict = mcp._tools
             tool_names = list(tools_dict.keys())
         except Exception as e:
             logger.error(f"Error getting tools: {e}")
             tool_names = []
         
-        return JSONResponse(
-            content={
-                "service": "Cliniko MCP Server",
-                "version": "1.0",
-                "status": "running",
-                "endpoints": {
-                    "sse": "/sse",
-                    "message": "/message",
-                    "health": "/health"
-                },
-                "tools_count": len(tool_names),
-                "tools": tool_names
-            }
-        )
+        return JSONResponse({
+            "service": "Cliniko MCP Server",
+            "version": "1.0",
+            "status": "running",
+            "endpoints": {
+                "sse": "/sse",
+                "message": "/message",
+                "health": "/health"
+            },
+            "tools_count": len(tool_names),
+            "tools": tool_names
+        })
     
-    logger.info("App created successfully")
-    return app
+    # Add custom routes to the existing app
+    from starlette.routing import Mount
+    
+    # Get existing routes from sse_app
+    existing_routes = list(sse_app.routes)
+    
+    # Add our custom routes
+    custom_routes = [
+        Route("/health", health_check, methods=["GET"]),
+        Route("/", root, methods=["GET"]),
+    ]
+    
+    # Combine routes
+    sse_app.routes = custom_routes + existing_routes
+    
+    logger.info("App created successfully with routes:")
+    for route in sse_app.routes:
+        logger.info(f"  - {route.path}")
+    
+    return sse_app
 
 
 if __name__ == "__main__":
@@ -190,12 +206,15 @@ if __name__ == "__main__":
 
     logger.info("🚀 Starting Cliniko MCP Server...")
 
-    # Check registered tools
+    # Check registered tools (fix the coroutine issue)
     try:
-        tools = mcp.get_tools()
-        logger.info(f"📋 Registered tools: {len(tools)}")
-        for name, tool in tools.items():
-            logger.info(f"   ✅ {name}: {tool.description}")
+        if hasattr(mcp, '_tools'):
+            tools = mcp._tools
+            logger.info(f"📋 Registered tools: {len(tools)}")
+            for name, tool in tools.items():
+                logger.info(f"   ✅ {name}")
+        else:
+            logger.warning("No tools attribute found")
     except Exception as e:
         logger.error(f"⚠️  Error getting tools: {e}")
 

@@ -124,7 +124,9 @@ async def list_appointments_resource():
 
 if __name__ == "__main__":
     import asyncio
-    
+    import fastmcp.server.http as http
+    import uvicorn
+
     print("🚀 Starting Cliniko MCP Server...")
 
     # Check registered tools
@@ -141,18 +143,19 @@ if __name__ == "__main__":
     # Get configuration from environment
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
-    transport = os.getenv("MCP_TRANSPORT", "sse").lower()
+    transport = os.getenv("MCP_TRANSPORT", "http").lower()
 
     print(f"🌐 Starting MCP server on {host}:{port} using {transport} transport")
-    
+
     if transport == "stdio":
-        # For local development with AI clients that spawn processes
         print("📟 Running in stdio mode (for local AI clients)")
         app.run("stdio")
-    elif transport == "sse":
-        # For remote connections via Server-Sent Events
-        print("🌊 Running in SSE mode (for remote connections)")
-        asyncio.run(app.run_sse_async(host=host, port=port, log_level="info"))
+
+    elif transport in ("sse", "http"):
+        print("🌊 Running in HTTP/SSE mode (modern FastMCP transport)")
+        app_instance = http.create_sse_app(app)
+        uvicorn.run(app_instance, host=host, port=port, log_level="info")
+
     else:
-        print(f"❌ Unknown transport: {transport}. Supported: stdio, sse")
+        print(f"❌ Unknown transport: {transport}. Supported: stdio, sse, http")
         exit(1)

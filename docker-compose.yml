@@ -27,10 +27,8 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.cliniko-mcp.entrypoints=http
-      - traefik.http.routers.cliniko-mcp.rule=Host(`a0swcgcgg4c8o8cgcsggg00k.46.62.130.36.sslip.io`) && (PathPrefix(`/`) || PathPrefix(`/sse`))
-      - traefik.http.services.cliniko-mcp-service.loadbalancer.server.port=8000
-      - traefik.http.services.cliniko-mcp-service.loadbalancer.passhostheader=true
+      - traefik.http.routers.cliniko-mcp.rule=Host(`a0swcgcgg4c8o8cgcsggg00k.46.62.130.36.sslip.io`)
+      - traefik.http.services.cliniko-mcp.loadbalancer.server.port=8000
+      - traefik.http.middlewares.cliniko-mcp-strip.stripprefix.prefixes=/
       - traefik.http.middlewares.gzip.compress=true
-      - traefik.http.middlewares.cliniko-mcp-strip.stripprefix.prefixes=/sse
       - traefik.http.routers.cliniko-mcp.middlewares=cliniko-mcp-strip,gzip
-      - traefik.http.routers.cliniko-mcp.service=cliniko-mcp-service
